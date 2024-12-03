@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body { 
+        font-family: Arial, sans-serif; 
+        margin: 20px; 
+      }
+      .container { 
+        max-width: 800px; 
+        margin: 0 auto; 
+      }
+      .url-input-container {
+        border: 2px solid #4285f4;
+        padding: 20px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        background: white;
+      }
+      .url-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-bottom: 10px;
+        font-size: 14px;
+      }
+      .url-input:focus {
+        outline: none;
+        border-color: #4285f4;
+      }
+      .submit-button {
+        background-color: #4285f4;
+        color: white;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+      }
+      .submit-button:hover {
+        background-color: #357abd;
+      }
+      .loading-spinner {
+        display: none;
+        width: 20px;
+        height: 20px;
+        border: 2px solid #f3f3f3;
+        border-radius: 50%;
+        border-top: 2px solid #4285f4;
+        animation: spin 1s linear infinite;
+        margin: 10px auto;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      .result {
+        margin-top: 20px;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        display: none;
+        background: #f8f9fa;
+      }
+      .result h3 {
+        margin-top: 0;
+        color: #1a73e8;
+      }
+      .link-container {
+        background: white;
+        padding: 15px;
+        border-radius: 4px;
+        margin: 10px 0;
+        border: 1px solid #e0e0e0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .link-label {
+        font-weight: 500;
+        color: #202124;
+      }
+      .action-button {
+        background-color: #1a73e8;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 4px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: background-color 0.2s;
+      }
+      .action-button:hover {
+        background-color: #1557b0;
+      }
+      .error {
+        color: #f44336;
+        margin-top: 10px;
+        display: none;
+        padding: 10px;
+        border: 1px solid #ffcdd2;
+        border-radius: 4px;
+        background-color: #ffebee;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Google Doc Form Generator</h1>
+      
+      <div class="url-input-container">
+        <div>Enter Google Doc URL</div>
+        <input type="text" id="docUrl" class="url-input" 
+               placeholder="https://docs.google.com/document/d/...">
+        <button id="submitButton" class="submit-button">Generate Form</button>
+        <div class="loading-spinner" id="loadingSpinner"></div>
+      </div>
+      
+      <div id="error" class="error"></div>
+      <div id="result" class="result">
+        <h3>Generated Links</h3>
+        
+        <div class="link-container">
+          <div class="link-label">Pre-filled Assessment Form</div>
+          <a id="formLink" class="action-button" href="#" target="_blank">Open Form</a>
+        </div>
+        
+        <div class="link-container">
+          <div class="link-label">Response Sheet</div>
+          <a id="sheetLink" class="action-button" href="#" target="_blank">Open Google Sheet</a>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const docUrlInput = document.getElementById('docUrl');
+      const submitButton = document.getElementById('submitButton');
+      const resultDiv = document.getElementById('result');
+      const loadingSpinner = document.getElementById('loadingSpinner');
+      
+      function extractDocId(url) {
+        const parts = url.split('/d/');
+        if (parts.length > 1) {
+          const docId = parts[1].split('/')[0];
+          return docId;
+        }
+        return url;
+      }
+      
+      submitButton.addEventListener('click', () => {
+        const url = docUrlInput.value.trim();
+        if (!url) return;
+        
+        const docId = extractDocId(url);
+        
+        loadingSpinner.style.display = 'block';
+        submitButton.disabled = true;
+        resultDiv.style.display = 'none';
+        
+        google.script.run
+          .withSuccessHandler(function(result) {
+            loadingSpinner.style.display = 'none';
+            submitButton.disabled = false;
+            
+            if (result.error) {
+              showError(result.error);
+              return;
+            }
+            
+            resultDiv.style.display = 'block';
+            
+            const formLink = document.getElementById('formLink');
+            formLink.href = result.prefilledUrl;
+            
+            const sheetLink = document.getElementById('sheetLink');
+            sheetLink.href = result.sheetUrl;
+          })
+          .withFailureHandler(function(error) {
+            loadingSpinner.style.display = 'none';
+            submitButton.disabled = false;
+            showError(error.message || 'Processing failed');
+          })
+          .processGoogleDoc(docId);
+      });
+
+      function showError(message) {
+        const errorDiv = document.getElementById('error');
+        errorDiv.style.display = 'block';
+        errorDiv.textContent = message;
+        setTimeout(() => {
+          errorDiv.style.display = 'none';
+        }, 5000);
+      }
+    </script>
+  </body>
+</html>

@@ -1,7 +1,7 @@
 // === config.gs ===
 const CONFIG = {
-  TEMPLATE_SHEET_ID: '1eHP1UDiO7ESmcMc-mwYtqmJbPtf7-GiPg09GmLTREDQ',
-  QUESTIONS_DOC_ID: '1VDaA_ip56bRybjYjchK3PGbttcgsRRc1cLq3i32hvj0',
+  TEMPLATE_SHEET_ID: '1Wp2WNeXoI6wcMs1gno79MdUEhazUNeQxieN2BKOkwBg',
+  QUESTIONS_DOC_ID: '',
   TARGET_FOLDER_ID: '1jdEZ8aTmU2rdbUKwkzirmmkOmBREwizi',
   QUESTIONS_SHEET_NAME: 'Form Questions',
   FORM_TITLE: 'Interview Questions Form',

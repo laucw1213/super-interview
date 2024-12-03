@@ -5,9 +5,13 @@ function createSheetInFolder() {
     // Get target folder
     const targetFolder = DriveApp.getFolderById(CONFIG.TARGET_FOLDER_ID);
     
+    // Create sheet name with timestamp
+    const timestamp = getTimestampSuffix();
+    const newSheetName = `Interview Questions ${timestamp}`;
+    
     // Create copy of template in target folder directly
     const templateFile = DriveApp.getFileById(CONFIG.TEMPLATE_SHEET_ID);
-    const clonedFile = templateFile.makeCopy(targetFolder);
+    const clonedFile = templateFile.makeCopy(newSheetName, targetFolder);
     const clonedSheetId = clonedFile.getId();
     
     // Open the cloned spreadsheet
