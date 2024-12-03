@@ -1,197 +1,414 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <base target="_top">
+<head>
+    <title>Google Doc Form Generator</title>
     <style>
-      body { 
-        font-family: Arial, sans-serif; 
-        margin: 20px; 
-      }
-      .container { 
-        max-width: 800px; 
-        margin: 0 auto; 
-      }
-      .url-input-container {
-        border: 2px solid #4285f4;
-        padding: 20px;
-        border-radius: 4px;
-        margin-bottom: 20px;
-        background: white;
-      }
-      .url-input {
-        width: 100%;
-        padding: 8px 12px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        margin-bottom: 10px;
-        font-size: 14px;
-      }
-      .url-input:focus {
-        outline: none;
-        border-color: #4285f4;
-      }
-      .submit-button {
-        background-color: #4285f4;
-        color: white;
-        padding: 8px 16px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-weight: 500;
-      }
-      .submit-button:hover {
-        background-color: #357abd;
-      }
-      .loading-spinner {
-        display: none;
-        width: 20px;
-        height: 20px;
-        border: 2px solid #f3f3f3;
-        border-radius: 50%;
-        border-top: 2px solid #4285f4;
-        animation: spin 1s linear infinite;
-        margin: 10px auto;
-      }
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-      .result {
-        margin-top: 20px;
-        padding: 20px;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        display: none;
-        background: #f8f9fa;
-      }
-      .result h3 {
-        margin-top: 0;
-        color: #1a73e8;
-      }
-      .link-container {
-        background: white;
-        padding: 15px;
-        border-radius: 4px;
-        margin: 10px 0;
-        border: 1px solid #e0e0e0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-      .link-label {
-        font-weight: 500;
-        color: #202124;
-      }
-      .action-button {
-        background-color: #1a73e8;
-        color: white;
-        padding: 8px 16px;
-        border-radius: 4px;
-        text-decoration: none;
-        font-weight: 500;
-        transition: background-color 0.2s;
-      }
-      .action-button:hover {
-        background-color: #1557b0;
-      }
-      .error {
-        color: #f44336;
-        margin-top: 10px;
-        display: none;
-        padding: 10px;
-        border: 1px solid #ffcdd2;
-        border-radius: 4px;
-        background-color: #ffebee;
-      }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        .input-section {
+            margin-bottom: 20px;
+        }
+        .loading-spinner {
+            display: none;
+            color: #666;
+        }
+        .error {
+            color: red;
+            display: none;
+            margin: 10px 0;
+        }
+        .result {
+            display: none;
+        }
+        .step {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            display: none;
+        }
+        .step.completed {
+            background-color: #f8f9fa;
+            opacity: 0.8;
+        }
+        .step.completed .action-button {
+            display: none !important;
+        }
+        .step.completed .step-header::before {
+            content: "✓ ";
+            color: #34a853;
+        }
+        .step.active {
+            display: block;
+            border: 2px solid #4285f4;
+        }
+        .step.visible {
+            display: block;
+        }
+        .step-header {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .link-container {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+        }
+        .link-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .link-title {
+            font-weight: bold;
+        }
+        .input-url {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .action-button {
+            background-color: #4285f4;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            margin-left: 10px;
+        }
+        .action-button:hover {
+            background-color: #357abd;
+        }
+        .action-button.open-button {
+            background-color: #4285f4;
+        }
+        .action-button.confirm-button {
+            background-color: #34a853;
+            display: none;
+        }
+        .guide-text {
+            font-size: 14px;
+            color: #666;
+            margin-top: 10px;
+        }
+        .generate-button {
+            background-color: #4285f4;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .generate-button:hover {
+            background-color: #357abd;
+        }
+        .completion-message {
+            text-align: center;
+            padding: 20px;
+            background-color: #e6f4ea;
+            border-radius: 5px;
+            margin-top: 20px;
+            display: none;
+        }
+        .completion-message h2 {
+            color: #34a853;
+            margin-bottom: 10px;
+        }
+        .form-url-container {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        .form-url {
+            word-break: break-all;
+            font-family: monospace;
+            color: #1a73e8;
+            padding: 10px;
+            margin: 10px 0;
+            background-color: white;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        .copy-button {
+            margin-top: 10px;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .copy-button:hover {
+            background-color: #357abd;
+        }
     </style>
-  </head>
-  <body>
+</head>
+<body>
     <div class="container">
-      <h1>Google Doc Form Generator</h1>
-      
-      <div class="url-input-container">
-        <div>Enter Google Doc URL</div>
-        <input type="text" id="docUrl" class="url-input" 
-               placeholder="https://docs.google.com/document/d/...">
-        <button id="submitButton" class="submit-button">Generate Form</button>
-        <div class="loading-spinner" id="loadingSpinner"></div>
-      </div>
-      
-      <div id="error" class="error"></div>
-      <div id="result" class="result">
-        <h3>Generated Links</h3>
-        
-        <div class="link-container">
-          <div class="link-label">Pre-filled Assessment Form</div>
-          <a id="formLink" class="action-button" href="#" target="_blank">Open Form</a>
+        <h1>Interview Form Bot</h1>
+
+        <div class="input-section">
+            <div class="step-header">Step 1: Input question doc url</div>
+            <input type="text" id="docUrl" class="input-url" placeholder="Paste your Google Doc URL here">
+            <button id="generateButton" onclick="generateForm()" class="generate-button">Generate Form</button>
+            <div id="loadingSpinner" class="loading-spinner">Generating...</div>
         </div>
-        
-        <div class="link-container">
-          <div class="link-label">Response Sheet</div>
-          <a id="sheetLink" class="action-button" href="#" target="_blank">Open Google Sheet</a>
+
+        <div id="error" class="error"></div>
+
+        <div id="result" class="result">
+            <!-- Step 2: Form Editor -->
+            <div id="step2" class="step">
+                <div class="step-header">Step 2: Review and Confirm Form</div>
+                <div class="link-container">
+                    <div class="link-header">
+                        <span class="link-title">Form Editor</span>
+                        <div>
+                            <button id="formEditorOpen" class="action-button open-button" onclick="handleFormEditorOpen()">Open Form</button>
+                            <button id="formEditorConfirm" class="action-button confirm-button" onclick="confirmStep(2)">Confirm</button>
+                        </div>
+                    </div>
+                    <div class="guide-text">
+                        <strong>Instructions:</strong><br>
+                        1. Open the form editor to review the questions<br>
+                        2. Make any necessary adjustments<br>
+                        3. Click Confirm when ready
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: Response Sheet -->
+            <div id="step3" class="step">
+                <div class="step-header">Step 3: Response Sheet Setup</div>
+                <div class="link-container">
+                    <div class="link-header">
+                        <span class="link-title">Response Sheet</span>
+                        <div>
+                            <button id="sheetOpen" class="action-button open-button" onclick="handleSheetOpen()">Open Sheet</button>
+                            <button id="sheetConfirm" class="action-button confirm-button" onclick="confirmStep(3)">Confirm</button>
+                        </div>
+                    </div>
+                    <div class="guide-text">
+                        <strong>Instructions:</strong><br>
+                        1. Open the response sheet<br>
+                        2. Click "Form Tools" in the top menu<br>
+                        3. Select "Setup Form Trigger"<br>
+                        4. Complete the authorization process<br>
+                        5. Click Confirm after setup is complete
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4: Prefilled Form -->
+            <div id="step4" class="step">
+                <div class="step-header">Step 4: Test Submission</div>
+                <div class="link-container">
+                    <div class="link-header">
+                        <span class="link-title">Pre-filled Assessment Form</span>
+                        <div>
+                            <button id="prefilledFormOpen" class="action-button open-button" onclick="handlePrefilledFormOpen()">Open Form</button>
+                            <button id="prefilledFormConfirm" class="action-button confirm-button" onclick="confirmStep(4)">Confirm</button>
+                        </div>
+                    </div>
+                    <div class="guide-text">
+                        <strong>Instructions:</strong><br>
+                        1. Open the pre-filled form<br>
+                        2. Review all answers<br>
+                        3. Scroll to bottom and submit the form
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 5: Gmail -->
+            <div id="step5" class="step">
+                <div class="step-header">Step 5: Send Interview Email</div>
+                <div class="link-container">
+                    <div class="link-header">
+                        <span class="link-title">Gmail</span>
+                        <div>
+                            <button id="gmailOpen" class="action-button open-button" onclick="handleGmailOpen()">Open Gmail</button>
+                            <button id="gmailConfirm" class="action-button confirm-button" onclick="showCompletion()">Confirm</button>
+                        </div>
+                    </div>
+                    <div class="guide-text">
+                        <strong>Instructions:</strong><br>
+                        1. Open Gmail<br>
+                        2. Create new email for sending the form<br>
+                        3. Click Confirm after sending the email
+                    </div>
+                </div>
+            </div>
+
+            <!-- Completion Message -->
+            <div id="completionMessage" class="completion-message">
+                <h2>Congratulations!</h2>
+                <p>Your form is ready to distribute</p>
+                <div class="form-url-container">
+                    <p>Form URL:</p>
+                    <div id="formUrl" class="form-url"></div>
+                    <button onclick="copyFormUrl()" class="copy-button">Copy URL</button>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
 
     <script>
-      const docUrlInput = document.getElementById('docUrl');
-      const submitButton = document.getElementById('submitButton');
-      const resultDiv = document.getElementById('result');
-      const loadingSpinner = document.getElementById('loadingSpinner');
-      
-      function extractDocId(url) {
-        const parts = url.split('/d/');
-        if (parts.length > 1) {
-          const docId = parts[1].split('/')[0];
-          return docId;
+        let formData = {};
+
+        function generateForm() {
+            const docUrl = document.getElementById('docUrl').value;
+            if (!docUrl) {
+                showError('Please enter a Google Doc URL');
+                return;
+            }
+
+            document.getElementById('generateButton').style.display = 'none';
+            document.getElementById('loadingSpinner').style.display = 'block';
+            document.getElementById('error').style.display = 'none';
+            
+            const docId = extractDocId(docUrl);
+            if (!docId) {
+                showError('Invalid Google Doc URL');
+                document.getElementById('generateButton').style.display = 'block';
+                return;
+            }
+
+            google.script.run
+                .withSuccessHandler(updateUI)
+                .withFailureHandler(handleError)
+                .processGoogleDoc(docId);
         }
-        return url;
-      }
-      
-      submitButton.addEventListener('click', () => {
-        const url = docUrlInput.value.trim();
-        if (!url) return;
-        
-        const docId = extractDocId(url);
-        
-        loadingSpinner.style.display = 'block';
-        submitButton.disabled = true;
-        resultDiv.style.display = 'none';
-        
-        google.script.run
-          .withSuccessHandler(function(result) {
-            loadingSpinner.style.display = 'none';
-            submitButton.disabled = false;
+
+        function handleError(error) {
+            showError(error);
+            document.getElementById('generateButton').style.display = 'block';
+        }
+
+        function extractDocId(url) {
+            const match = url.match(/\/d\/([-\w]{25,})/);
+            return match ? match[1] : null;
+        }
+
+        function handleFormEditorOpen() {
+            if (formData.formId) {
+                google.script.run
+                    .withSuccessHandler(function(url) {
+                        window.open(url, '_blank');
+                        document.getElementById('formEditorOpen').style.display = 'none';
+                        document.getElementById('formEditorConfirm').style.display = 'inline-block';
+                    })
+                    .withFailureHandler(function(error) {
+                        showError('Could not open form editor: ' + error);
+                    })
+                    .getFormEditorUrl(formData.formId);
+            }
+        }
+
+        function handleSheetOpen() {
+            if (formData.sheetUrl) {
+                window.open(formData.sheetUrl, '_blank');
+                document.getElementById('sheetOpen').style.display = 'none';
+                document.getElementById('sheetConfirm').style.display = 'inline-block';
+            }
+        }
+
+        function handlePrefilledFormOpen() {
+            if (formData.prefilledUrl) {
+                window.open(formData.prefilledUrl, '_blank');
+                document.getElementById('prefilledFormOpen').style.display = 'none';
+                document.getElementById('prefilledFormConfirm').style.display = 'inline-block';
+            }
+        }
+
+        function handleGmailOpen() {
+            window.open('https://mail.google.com', '_blank');
+            document.getElementById('gmailOpen').style.display = 'none';
+            document.getElementById('gmailConfirm').style.display = 'inline-block';
+        }
+
+        function updateUI(result) {
+            document.getElementById('loadingSpinner').style.display = 'none';
             
             if (result.error) {
-              showError(result.error);
-              return;
+                showError(result.error);
+                document.getElementById('generateButton').style.display = 'block';
+                return;
             }
             
-            resultDiv.style.display = 'block';
-            
-            const formLink = document.getElementById('formLink');
-            formLink.href = result.prefilledUrl;
-            
-            const sheetLink = document.getElementById('sheetLink');
-            sheetLink.href = result.sheetUrl;
-          })
-          .withFailureHandler(function(error) {
-            loadingSpinner.style.display = 'none';
-            submitButton.disabled = false;
-            showError(error.message || 'Processing failed');
-          })
-          .processGoogleDoc(docId);
-      });
+            formData = result;
+            document.getElementById('result').style.display = 'block';
+            const step2 = document.getElementById('step2');
+            step2.classList.add('visible', 'active');
+        }
 
-      function showError(message) {
-        const errorDiv = document.getElementById('error');
-        errorDiv.style.display = 'block';
-        errorDiv.textContent = message;
-        setTimeout(() => {
-          errorDiv.style.display = 'none';
-        }, 5000);
-      }
+        function showError(error) {
+            document.getElementById('loadingSpinner').style.display = 'none';
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = 'Error: ' + error;
+            errorDiv.style.display = 'block';
+        }
+
+        function confirmStep(stepNum) {
+            // Mark current step as completed
+            const currentStep = document.getElementById(`step${stepNum}`);
+            currentStep.classList.add('completed');
+            currentStep.classList.remove('active');
+            
+            if (stepNum < 5) {
+                // Show and activate next step
+                const nextStep = document.getElementById(`step${stepNum + 1}`);
+                nextStep.classList.add('visible', 'active');
+                
+                // Reset the buttons state for the next step
+                if (nextStep) {
+                    const openButton = nextStep.querySelector('.open-button');
+                    const confirmButton = nextStep.querySelector('.confirm-button');
+                    if (openButton) openButton.style.display = 'inline-block';
+                    if (confirmButton) confirmButton.style.display = 'none';
+                }
+                
+                // Scroll to the next step smoothly
+                nextStep.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        function showCompletion() {
+            // Mark step 5 as completed
+            const step5 = document.getElementById('step5');
+            step5.classList.add('completed');
+            step5.classList.remove('active');
+            
+            // Get form URL and show completion message
+            google.script.run
+                .withSuccessHandler(function(url) {
+                    document.getElementById('formUrl').textContent = url;
+                    document.getElementById('completionMessage').style.display = 'block';
+                    document.getElementById('completionMessage').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                })
+                .getPublishedFormUrl(formData.formId);
+        }
+
+        function copyFormUrl() {
+            const formUrl = document.getElementById('formUrl').textContent;
+            navigator.clipboard.writeText(formUrl).then(function() {
+                const copyButton = document.querySelector('.copy-button');
+                const originalText = copyButton.textContent;
+                copyButton.textContent = 'Copied!';
+                setTimeout(() => {
+                    copyButton.textContent = originalText;
+                }, 2000);
+            });
+        }
     </script>
-  </body>
+</body>
 </html>

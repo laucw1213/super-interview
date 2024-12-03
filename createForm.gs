@@ -1,5 +1,3 @@
-
-// === createForm.gs ===
 function createFormInFolder(sheetId) {
   try {
     // Get target folder
@@ -28,7 +26,14 @@ function createFormInFolder(sheetId) {
     form.setDestination(FormApp.DestinationType.SPREADSHEET, sheetId);
     Logger.log(`Form linked to spreadsheet: ${sheetId}`);
 
-    return formId;
+    // Get the correct form edit URL
+    const formEditUrl = form.getEditUrl(); // 使用 getEditUrl() 方法获取正确的编辑器 URL
+    Logger.log(`Form edit URL: ${formEditUrl}`);
+    
+    return {
+      formId: formId,
+      formEditUrl: formEditUrl
+    };
   } catch (error) {
     Logger.log(`Error in createFormInFolder: ${error.message}`);
     throw error;

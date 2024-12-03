@@ -6,17 +6,12 @@ function doGet() {
 
 function processGoogleDoc(docId) {
   try {
-    // Update CONFIG with the new document ID
     CONFIG.QUESTIONS_DOC_ID = docId;
-    
-    // Run the main process
     const result = main();
     
-    // Get the sheet URL
-    const sheetUrl = DriveApp.getFileById(result.sheetId).getUrl();
-    
     return {
-      sheetUrl: sheetUrl,
+      sheetUrl: result.sheetUrl,
+      formId: result.formId,
       prefilledUrl: result.prefilledUrl
     };
     
@@ -25,5 +20,23 @@ function processGoogleDoc(docId) {
     return {
       error: error.message || 'Processing failed'
     };
+  }
+}
+
+function getFormEditorUrl(formId) {
+  try {
+    const form = FormApp.openById(formId);
+    return form.getEditUrl();
+  } catch (error) {
+    throw new Error('Unable to generate form editor URL');
+  }
+}
+
+function getPublishedFormUrl(formId) {
+  try {
+    const form = FormApp.openById(formId);
+    return form.getPublishedUrl();
+  } catch (error) {
+    throw new Error('Unable to get published form URL');
   }
 }
