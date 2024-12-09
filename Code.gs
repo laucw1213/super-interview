@@ -1,5 +1,4 @@
-// === code.gs ===
-function main() {
+function main(params) {  // Change to accept a params object
   try {
     // Validate that all required configuration exists in project settings
     validateConfig();
@@ -27,14 +26,19 @@ function main() {
       Logger.log(`A${index + 1}: ${answersData.answers[index]}`);
     });
 
-    // Step 4: Get form entry IDs and form URL
+    // Step 4: Create aspect sheet with provided aspects
+    if (params && params.aspects) {
+      createAspectSheet(sheetId, params.aspects);
+    }
+
+    // Step 5: Get form entry IDs and form URL
     const form = FormApp.openById(formId);
     const formUrl = form.getPublishedUrl();
     const entryIds = findEntryIds(formId);
     Logger.log('Found Entry IDs:');
     Logger.log(entryIds);
 
-    // Step 5: Generate prefilled form link
+    // Step 6: Generate prefilled form link
     const prefilledUrl = generatePrefilledLink(formUrl, entryIds, answersData.answers);
     Logger.log('Generated prefilled form URL:');
     Logger.log(prefilledUrl);

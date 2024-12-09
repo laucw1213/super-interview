@@ -4,14 +4,20 @@ function doGet() {
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
-function processGoogleDoc(docId) {
+function processGoogleDoc(docId, aspects) {
   try {
     PropertiesService.getScriptProperties().setProperty('QUESTIONS_DOC_ID', docId);
     CONFIG.QUESTIONS_DOC_ID = docId;
-    const result = main();
+    
+    // Create params object to pass to main
+    const params = {
+      aspects: aspects
+    };
+    
+    const result = main(params);  // Pass params object to main
     
     return {
-      sheetUrl: getSheetUrl(result.sheetId), // 添加这行
+      sheetUrl: getSheetUrl(result.sheetId),
       formId: result.formId,
       prefilledUrl: result.prefilledUrl
     };

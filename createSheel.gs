@@ -37,3 +37,41 @@ function createSheetInFolder() {
     throw error;
   }
 }
+
+function createAspectSheet(sheetId, aspectsStr) {
+  try {
+    const spreadsheet = SpreadsheetApp.openById(sheetId);
+    let aspectSheet;
+    
+    // Try to get existing Aspects sheet or create new one
+    try {
+      aspectSheet = spreadsheet.getSheetByName('Aspects');
+      if (aspectSheet) {
+        aspectSheet.clear();
+      } else {
+        aspectSheet = spreadsheet.insertSheet('Aspects');
+      }
+    } catch (e) {
+      aspectSheet = spreadsheet.insertSheet('Aspects');
+    }
+    
+    // Process aspects string into array
+    const aspects = aspectsStr.split(',')
+      .map(aspect => aspect.trim())
+      .filter(aspect => aspect.length > 0);
+    
+    if (aspects.length === 0) {
+      throw new Error('No valid aspects provided');
+    }
+    
+    // Set headers
+    aspectSheet.getRange(1, 1, 1, aspects.length).setValues([aspects]);
+    
+    Logger.log(`Created aspect sheet with ${aspects.length} aspects: ${aspects.join(', ')}`);
+    return aspectSheet.getSheetId();
+    
+  } catch (error) {
+    Logger.log(`Error in createAspectSheet: ${error.message}`);
+    throw error;
+  }
+}
