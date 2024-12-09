@@ -1,27 +1,25 @@
-
 // === createSheet.gs ===
 function createSheetInFolder() {
   try {
-    // Get target folder
-    const targetFolder = DriveApp.getFolderById(CONFIG.TARGET_FOLDER_ID);
+    // Get configuration from project settings
+    const config = getConfig();
     
-    // Create sheet name with timestamp
-    const timestamp = getTimestampSuffix();
-    const newSheetName = `Interview Questions ${timestamp}`;
+    // Get target folder
+    const targetFolder = DriveApp.getFolderById(config.TARGET_FOLDER_ID);
     
     // Create copy of template in target folder directly
-    const templateFile = DriveApp.getFileById(CONFIG.TEMPLATE_SHEET_ID);
-    const clonedFile = templateFile.makeCopy(newSheetName, targetFolder);
+    const templateFile = DriveApp.getFileById(config.TEMPLATE_SHEET_ID);
+    const clonedFile = templateFile.makeCopy(targetFolder);
     const clonedSheetId = clonedFile.getId();
     
     // Open the cloned spreadsheet
     const spreadsheet = SpreadsheetApp.openById(clonedSheetId);
     
     // Check if Form Questions sheet exists, if not create it
-    let sheet = spreadsheet.getSheetByName(CONFIG.QUESTIONS_SHEET_NAME);
+    let sheet = spreadsheet.getSheetByName(config.QUESTIONS_SHEET_NAME);
     if (!sheet) {
-      sheet = spreadsheet.insertSheet(CONFIG.QUESTIONS_SHEET_NAME);
-      Logger.log(`Created new sheet: ${CONFIG.QUESTIONS_SHEET_NAME}`);
+      sheet = spreadsheet.insertSheet(config.QUESTIONS_SHEET_NAME);
+      Logger.log(`Created new sheet: ${config.QUESTIONS_SHEET_NAME}`);
     }
 
     // Clear any existing content
@@ -35,7 +33,7 @@ function createSheetInFolder() {
 
     return clonedSheetId;
   } catch (error) {
-    Logger.log(`Error: ${error.message}`);
+    Logger.log(`Error in createSheetInFolder: ${error.message}`);
     throw error;
   }
 }

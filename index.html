@@ -3,6 +3,25 @@
 <head>
     <title>Google Doc Form Generator</title>
     <style>
+        .input-url {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background-color: white;
+        }
+
+        .generate-button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .guide-text {
+            font-size: 14px;
+            color: #666;
+            margin: 10px 0;
+        }    
         .container {
             max-width: 800px;
             margin: 0 auto;
@@ -167,14 +186,19 @@
         Interview Form Bot
     </h1>
 
-        <div class="input-section">
-            <div class="step-header">Step 1: Input question doc url</div>
-            <input type="text" id="docUrl" class="input-url" placeholder="Paste your Google Doc URL here">
-            <strong>Sample Question Doc Url:</strong> <br>
-            https://docs.google.com/document/d/1VDaA_ip56bRybjYjchK3PGbttcgsRRc1cLq3i32hvj0 <br>
-            <button id="generateButton" onclick="generateForm()" class="generate-button">Generate Form</button>
-            <div id="loadingSpinner" class="loading-spinner">Generating...</div>
+    <div class="input-section">
+        <div class="step-header">Step 1: Select Question Document</div>
+        <select id="docSelector" class="input-url">
+            <option value="">Select a document...</option>
+        </select>
+        <div class="guide-text">
+            Available documents will be loaded from your project folder.
         </div>
+        <button id="generateButton" onclick="generateForm()" class="generate-button" disabled>
+            Generate Form
+        </button>
+        <div id="loadingSpinner" class="loading-spinner">Generating...</div>
+    </div>
 
         <div id="error" class="error"></div>
 
@@ -418,6 +442,65 @@
                 }, 2000);
             });
         }
+
+           // Function to load documents into dropdown
+    function loadDocuments() {
+        google.script.run
+            .withSuccessHandler(populateDropdown)
+            .withFailureHandler(handleLoadError)
+            .getAvailableGoogleDocs();
+    }
+
+    // Function to populate the dropdown with documents
+    function populateDropdown(docs) {
+        const selector = document.getElementById('docSelector');
+        const generateButton = document.getElementById('generateButton');
+        
+        // Clear existing options except the first one
+        while (selector.options.length > 1) {
+            selector.remove(1);
+        }
+        
+        // Add new options
+        docs.forEach(doc => {
+            const option = document.createElement('option');
+            option.value = doc.id;
+            option.text = doc.name;
+            selector.add(option);
+        });
+        
+        // Enable/disable generate button based on selection
+        selector.onchange = function() {
+            generateButton.disabled = !this.value;
+        };
+    }
+
+    // Function to handle loading errors
+    function handleLoadError(error) {
+        showError('Failed to load documents: ' + error);
+    }
+
+    // Update the existing generateForm function
+    function generateForm() {
+        const docId = document.getElementById('docSelector').value;
+        if (!docId) {
+            showError('Please select a document');
+            return;
+        }
+
+        document.getElementById('generateButton').style.display = 'none';
+        document.getElementById('loadingSpinner').style.display = 'block';
+        document.getElementById('error').style.display = 'none';
+
+        google.script.run
+            .withSuccessHandler(updateUI)
+            .withFailureHandler(handleError)
+            .processGoogleDoc(docId);
+    }
+
+    // Load documents when the page loads
+    window.onload = loadDocuments;
+
     </script>
 </body>
 </html>
