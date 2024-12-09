@@ -6,17 +6,12 @@ function doGet() {
 
 function processGoogleDoc(docId) {
   try {
-    // Update the QUESTIONS_DOC_ID in Script Properties
     PropertiesService.getScriptProperties().setProperty('QUESTIONS_DOC_ID', docId);
-    
-    // Update the CONFIG object
     CONFIG.QUESTIONS_DOC_ID = docId;
-    
-    // Continue with the rest of the process
     const result = main();
     
     return {
-      sheetUrl: result.sheetUrl,
+      sheetUrl: getSheetUrl(result.sheetId), // 添加这行
       formId: result.formId,
       prefilledUrl: result.prefilledUrl
     };
@@ -26,6 +21,16 @@ function processGoogleDoc(docId) {
     return {
       error: error.message || 'Processing failed'
     };
+  }
+}
+
+function getSheetUrl(sheetId) {
+  try {
+    const sheet = SpreadsheetApp.openById(sheetId);
+    return sheet.getUrl();
+  } catch (error) {
+    Logger.log(`Error getting sheet URL: ${error.message}`);
+    throw error;
   }
 }
 
