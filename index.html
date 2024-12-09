@@ -155,11 +155,23 @@
 </head>
 <body>
     <div class="container">
-        <h1>Interview Form Bot</h1>
+      <h1 style="display: flex; align-items: center; gap: 10px;">
+        <svg width="32" height="32" viewBox="0 0 52 52">
+            <rect fill="none" height="4.8" rx="1.6" width="27.2" x="12.4" y="26"/>
+            <rect fill="none" height="4.8" rx="1.6" width="24" x="12.4" y="35.6"/>
+            <g>
+                <path d="m36.4 14.8h8.48a1.09 1.09 0 0 0 1.12-1.12 1 1 0 0 0 -.32-.8l-10.56-10.56a1 1 0 0 0 -.8-.32 1.09 1.09 0 0 0 -1.12 1.12v8.48a3.21 3.21 0 0 0 3.2 3.2z" fill="currentColor"/>
+                <path d="m44.4 19.6h-11.2a4.81 4.81 0 0 1 -4.8-4.8v-11.2a1.6 1.6 0 0 0 -1.6-1.6h-16a4.81 4.81 0 0 0 -4.8 4.8v38.4a4.81 4.81 0 0 0 4.8 4.8h30.4a4.81 4.81 0 0 0 4.8-4.8v-24a1.6 1.6 0 0 0 -1.6-1.6zm-32-1.6a1.62 1.62 0 0 1 1.6-1.55h6.55a1.56 1.56 0 0 1 1.57 1.55v1.59a1.63 1.63 0 0 1 -1.59 1.58h-6.53a1.55 1.55 0 0 1 -1.58-1.58zm24 20.77a1.6 1.6 0 0 1 -1.6 1.6h-20.8a1.6 1.6 0 0 1 -1.6-1.6v-1.57a1.6 1.6 0 0 1 1.6-1.6h20.8a1.6 1.6 0 0 1 1.6 1.6zm3.2-9.6a1.6 1.6 0 0 1 -1.6 1.63h-24a1.6 1.6 0 0 1 -1.6-1.6v-1.6a1.6 1.6 0 0 1 1.6-1.6h24a1.6 1.6 0 0 1 1.6 1.6z" fill="currentColor"/>
+            </g>
+        </svg>
+        Interview Form Bot
+    </h1>
 
         <div class="input-section">
             <div class="step-header">Step 1: Input question doc url</div>
             <input type="text" id="docUrl" class="input-url" placeholder="Paste your Google Doc URL here">
+            <strong>Sample Question Doc Url:</strong> <br>
+            https://docs.google.com/document/d/1VDaA_ip56bRybjYjchK3PGbttcgsRRc1cLq3i32hvj0 <br>
             <button id="generateButton" onclick="generateForm()" class="generate-button">Generate Form</button>
             <div id="loadingSpinner" class="loading-spinner">Generating...</div>
         </div>
@@ -172,14 +184,13 @@
                 <div class="step-header">Step 2: Review and Confirm Form</div>
                 <div class="link-container">
                     <div class="link-header">
-                        <span class="link-title">Form Editor</span>
+                        <span class="link-title">Instructions:</span>
                         <div>
                             <button id="formEditorOpen" class="action-button open-button" onclick="handleFormEditorOpen()">Open Form</button>
                             <button id="formEditorConfirm" class="action-button confirm-button" onclick="confirmStep(2)">Confirm</button>
                         </div>
                     </div>
                     <div class="guide-text">
-                        <strong>Instructions:</strong><br>
                         1. Open the form editor to review the questions<br>
                         2. Make any necessary adjustments<br>
                         3. Click Confirm when ready
@@ -192,19 +203,19 @@
                 <div class="step-header">Step 3: Response Sheet Setup</div>
                 <div class="link-container">
                     <div class="link-header">
-                        <span class="link-title">Response Sheet</span>
+                        <span class="link-title">Instructions:</span>
                         <div>
                             <button id="sheetOpen" class="action-button open-button" onclick="handleSheetOpen()">Open Sheet</button>
                             <button id="sheetConfirm" class="action-button confirm-button" onclick="confirmStep(3)">Confirm</button>
                         </div>
                     </div>
                     <div class="guide-text">
-                        <strong>Instructions:</strong><br>
                         1. Open the response sheet<br>
-                        2. Click "Form Tools" in the top menu<br>
-                        3. Select "Setup Form Trigger"<br>
-                        4. Complete the authorization process<br>
-                        5. Click Confirm after setup is complete
+                        2. Wait for 30 seconds untill "Form Tools" show on meun.<br>
+                        3. Click "Form Tools" next to "Help" meun on the top <br>
+                        4. Select "Setup Form Trigger"<br>
+                        5. Complete the authorization process<br>
+                        6. Click Confirm after setup is complete
                     </div>
                 </div>
             </div>
@@ -214,14 +225,13 @@
                 <div class="step-header">Step 4: Test Submission</div>
                 <div class="link-container">
                     <div class="link-header">
-                        <span class="link-title">Pre-filled Assessment Form</span>
+                        <span class="link-title">Instructions:</span>
                         <div>
                             <button id="prefilledFormOpen" class="action-button open-button" onclick="handlePrefilledFormOpen()">Open Form</button>
                             <button id="prefilledFormConfirm" class="action-button confirm-button" onclick="confirmStep(4)">Confirm</button>
                         </div>
                     </div>
                     <div class="guide-text">
-                        <strong>Instructions:</strong><br>
                         1. Open the pre-filled form<br>
                         2. Review all answers<br>
                         3. Scroll to bottom and submit the form
@@ -234,14 +244,13 @@
                 <div class="step-header">Step 5: Send Interview Email</div>
                 <div class="link-container">
                     <div class="link-header">
-                        <span class="link-title">Gmail</span>
+                        <span class="link-title">Instructions:</span>
                         <div>
                             <button id="gmailOpen" class="action-button open-button" onclick="handleGmailOpen()">Open Gmail</button>
                             <button id="gmailConfirm" class="action-button confirm-button" onclick="showCompletion()">Confirm</button>
                         </div>
                     </div>
                     <div class="guide-text">
-                        <strong>Instructions:</strong><br>
                         1. Open Gmail<br>
                         2. Create new email for sending the form<br>
                         3. Click Confirm after sending the email
