@@ -6,7 +6,13 @@ function doGet() {
 
 function processGoogleDoc(docId) {
   try {
+    // Update the QUESTIONS_DOC_ID in Script Properties
+    PropertiesService.getScriptProperties().setProperty('QUESTIONS_DOC_ID', docId);
+    
+    // Update the CONFIG object
     CONFIG.QUESTIONS_DOC_ID = docId;
+    
+    // Continue with the rest of the process
     const result = main();
     
     return {
