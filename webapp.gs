@@ -9,12 +9,18 @@ function processGoogleDoc(docId, aspects) {
     PropertiesService.getScriptProperties().setProperty('QUESTIONS_DOC_ID', docId);
     CONFIG.QUESTIONS_DOC_ID = docId;
     
-    // Create params object to pass to main
     const params = {
       aspects: aspects
     };
     
-    const result = main(params);  // Pass params object to main
+    const result = main(params);
+    
+    // 检查执行结果
+    if (result.status === 'error') {
+      return {
+        error: result.error
+      };
+    }
     
     return {
       sheetUrl: getSheetUrl(result.sheetId),
@@ -25,7 +31,7 @@ function processGoogleDoc(docId, aspects) {
   } catch (error) {
     Logger.log('Process error: ' + error.toString());
     return {
-      error: error.message || 'Processing failed'
+      error: error.message || '处理失败'
     };
   }
 }
