@@ -69,6 +69,37 @@ function getAspectsFromSheet() {
   }
 }
 
+function getQuestionsPerAspect(responses) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Aspects");
+  if (!sheet) {
+    Logger.log("❌ Aspects sheet not found!");
+    return null;
+  }
+  
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+  const aspects = headers.filter(header => header !== "");
+  
+  // Get the form to access questions in original order
+  const form = FormApp.openByUrl(SpreadsheetApp.getActiveSpreadsheet().getFormUrl());
+  const formItems = form.getItems();
+  
+  // Filter and sort questions maintaining form order
+  const questions = formItems
+    .filter(item => item.getType() !== FormApp.ItemType.SECTION_HEADER)
+    .map(item => item.getTitle())
+    .filter(q => !["Timestamp", "Mobile", "Name", "Email"].includes(q));
+  
+  const questionsPerAspect = Math.floor(questions.length / aspects.length);
+  
+  return {
+    aspects,
+    questionsPerAspect,
+    totalQuestions: questions.length,
+    orderedQuestions: questions // Return the ordered questions
+  };
+}
+
 function generateAssessmentPrompt(categories, responses) {
   if (!categories || categories.length === 0) {
     Logger.log("❌ No categories found for assessment!");
@@ -78,23 +109,29 @@ function generateAssessmentPrompt(categories, responses) {
   Logger.log("\n📝 Categories for Assessment:");
   categories.forEach(cat => Logger.log("- " + cat));
 
-  // Filter out personal info fields
-  const relevantResponses = Object.entries(responses).filter(([question]) => 
-    !["Timestamp", "Mobile", "Name", "Email"].includes(question)
-  );
+  // Get questions in original form order
+  const form = FormApp.openByUrl(SpreadsheetApp.getActiveSpreadsheet().getFormUrl());
+  const formItems = form.getItems();
+  const orderedQuestions = formItems
+    .filter(item => item.getType() !== FormApp.ItemType.SECTION_HEADER)
+    .map(item => item.getTitle())
+    .filter(q => !["Timestamp", "Mobile", "Name", "Email"].includes(q));
 
-  // Get all questions except personal info
-  const questions = relevantResponses.map(([question]) => question);
-  
-  // Calculate questions per category (should be 3 each)
-  const questionsPerCategory = Math.floor(questions.length / categories.length);
-  
-  // Create question-to-category mapping
+  // Create ordered responses array maintaining form order
+  const orderedResponses = orderedQuestions.map(question => [
+    question,
+    responses[question] || ''
+  ]);
+
+  // Calculate questions per category
+  const questionsPerCategory = Math.floor(orderedQuestions.length / categories.length);
+
+  // Create category mapping based on form order
   let categoryMapping = "";
   let startIndex = 0;
   categories.forEach((category, index) => {
     const endIndex = startIndex + questionsPerCategory;
-    const categoryQuestions = questions.slice(startIndex, endIndex);
+    const categoryQuestions = orderedQuestions.slice(startIndex, endIndex);
     
     categoryMapping += `\n${category}:\n`;
     categoryQuestions.forEach((q, qIndex) => {
@@ -102,6 +139,9 @@ function generateAssessmentPrompt(categories, responses) {
     });
     startIndex = endIndex;
   });
+
+  Logger.log("\n📋 Questions mapped to categories:");
+  Logger.log(categoryMapping);
 
   const promptText = `Please analyze these candidate responses and create an assessment table following these EXACT requirements:
 
@@ -115,7 +155,7 @@ ASSESSMENT STRUCTURE REQUIREMENTS
 1. Each category MUST have exactly ${questionsPerCategory} questions assessed
 2. Questions MUST be assessed in the exact order shown above
 3. Do not combine or skip any questions
-4. Total rows in table must be ${questions.length}
+4. Total rows in table must be ${orderedQuestions.length}
 5. Questions must remain in their assigned categories - no moving questions between categories
 
 ASSESSMENT FORMAT
@@ -134,7 +174,7 @@ For each question:
 
 CANDIDATE RESPONSES
 -----------------
-${relevantResponses.map(([q, a], index) => `Response ${index + 1}:\nQuestion: ${q}\nAnswer: ${a}`).join('\n\n')}
+${orderedResponses.map(([q, a], index) => `Response ${index + 1}:\nQuestion: ${q}\nAnswer: ${a}`).join('\n\n')}
 
 DETAILED RESPONSES FORMAT
 ----------------------
@@ -146,6 +186,9 @@ DETAILED RESPONSES
 Question: [Question text]
 Answer: [Corresponding answer]`;
 
+  Logger.log("\n✅ Prompt Generation Complete");
+  Logger.log("📊 Questions per category:", questionsPerCategory);
+  
   return promptText;
 }
 
