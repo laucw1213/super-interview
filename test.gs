@@ -78,45 +78,59 @@ function generateAssessmentPrompt(categories, responses) {
   Logger.log("\n📝 Categories for Assessment:");
   categories.forEach(cat => Logger.log("- " + cat));
 
-  // Filter out timestamp and contact info from responses
+  // Filter out personal info fields
   const relevantResponses = Object.entries(responses).filter(([question]) => 
     !["Timestamp", "Mobile", "Name", "Email"].includes(question)
   );
 
-  const tableHeader = "| Question Category | Scenario | This Candidate | Benchmark | Key Performance |";
-  const tableDivider = "|---|---|---|---|---|";
+  // Get all questions except personal info
+  const questions = relevantResponses.map(([question]) => question);
   
-  const promptText = `Please analyze these candidate responses and create an assessment table organized by Question Category. Follow these requirements exactly:
+  // Calculate questions per category (should be 3 each)
+  const questionsPerCategory = Math.floor(questions.length / categories.length);
+  
+  // Create question-to-category mapping
+  let categoryMapping = "";
+  let startIndex = 0;
+  categories.forEach((category, index) => {
+    const endIndex = startIndex + questionsPerCategory;
+    const categoryQuestions = questions.slice(startIndex, endIndex);
+    
+    categoryMapping += `\n${category}:\n`;
+    categoryQuestions.forEach((q, qIndex) => {
+      categoryMapping += `${qIndex + 1}. ${q}\n`;
+    });
+    startIndex = endIndex;
+  });
+
+  const promptText = `Please analyze these candidate responses and create an assessment table following these EXACT requirements:
+
+STRICT CATEGORY-QUESTION MAPPING
+------------------------------
+These questions MUST be assessed under their assigned categories - do not change this mapping:
+${categoryMapping}
 
 ASSESSMENT STRUCTURE REQUIREMENTS
 ------------------------------
-1. Each row in the table represents EXACTLY ONE question and its response
-2. Each Question Category must have EXACTLY 3 questions (3 rows) in the assessment table
-3. Total number of rows in table must be ${categories.length * 3}
-4. Questions must be grouped by Question Category in this exact order:
-   ${categories.join('\n   ')}
+1. Each category MUST have exactly ${questionsPerCategory} questions assessed
+2. Questions MUST be assessed in the exact order shown above
+3. Do not combine or skip any questions
+4. Total rows in table must be ${questions.length}
+5. Questions must remain in their assigned categories - no moving questions between categories
 
 ASSESSMENT FORMAT
 ---------------
 PERFORMANCE ASSESSMENT TABLE
 --------------------------
-${tableHeader}
-${tableDivider}
+| Question Category | Scenario | This Candidate | Benchmark | Key Performance |
+|---|---|---|---|---|
 
-Assessment Guidelines:
-1. Each row must correspond to one specific question - never combine multiple questions in one row
-2. Group responses by Question Category - show all 3 questions for one category before moving to next
-3. For each question row:
-   - Scenario: Brief description of the question topic (2-4 words)
-   - This Candidate: Score in X/10 format
-   - Benchmark: Score in 0-9 format
-   - Key Performance: Brief analysis of response
-4. If a category has fewer than 3 responses:
-   - Add rows with "No response" scenario and 0/10 score until category has 3 rows
-   - Each added row must represent a distinct missing question
-5. If a category has more than 3 responses:
-   - Use only the first 3 distinct questions
-6. Maintain exact table formatting and alignment
+For each question:
+1. Question Category: Use exact category name from mapping
+2. Scenario: Brief description of question topic (2-4 words)
+3. This Candidate: Score in X/10 format
+4. Benchmark: Expected score in 0-9 format
+5. Key Performance: Brief analysis of response
 
 CANDIDATE RESPONSES
 -----------------
@@ -124,24 +138,40 @@ ${relevantResponses.map(([q, a], index) => `Response ${index + 1}:\nQuestion: ${
 
 DETAILED RESPONSES FORMAT
 ----------------------
-After the table, list the detailed responses using this exact structure:
+After the table, list the detailed responses in the EXACT SAME ORDER as the category-question mapping above:
 
 DETAILED RESPONSES
 ----------------
-[For each row in the PERFORMANCE ASSESSMENT TABLE, in exact same order:]
-Question: [Question from table row]
-Answer: [Corresponding answer or "No answer generated" if none]
-
-Critical Requirements for Detailed Responses:
-1. MUST follow the exact same order as the PERFORMANCE ASSESSMENT TABLE
-2. Include ALL questions from the table in the same order
-3. List questions category by category, matching table organization
-4. Each question must appear exactly once
-5. Questions without responses must show "No answer generated"
-6. Do not add any questions that aren't in the table
-7. Do not skip any questions that are in the table`;
+[List each question and answer in the exact order shown in the category mapping above]
+Question: [Question text]
+Answer: [Corresponding answer]`;
 
   return promptText;
+}
+
+function getQuestionsPerAspect(responses) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Aspects");
+  if (!sheet) {
+    Logger.log("❌ Aspects sheet not found!");
+    return null;
+  }
+  
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+  const aspects = headers.filter(header => header !== "");
+  
+  // Get all questions except personal info
+  const questions = Object.keys(responses).filter(q => 
+    !["Timestamp", "Mobile", "Name", "Email"].includes(q)
+  );
+  
+  const questionsPerAspect = Math.floor(questions.length / aspects.length);
+  
+  return {
+    aspects,
+    questionsPerAspect,
+    totalQuestions: questions.length
+  };
 }
 
 function onFormSubmit(e) {
@@ -261,7 +291,7 @@ function sendEmailReport(content, responses, spreadsheetUrl, formTitle, candidat
     
     const defaultRecipients = [
       owner,
-      "zorro.cheng@hkmci.com"
+      "alfred.lau@gemini.demo.hkmci.com"
     ].filter(Boolean).join(",");
     
     Logger.log(`Sending email to: ${defaultRecipients}`);
