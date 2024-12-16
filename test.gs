@@ -267,45 +267,73 @@ function sendEmailReport(content, responses, spreadsheetUrl, formTitle, candidat
     Logger.log(`Sending email to: ${defaultRecipients}`);
 
     var subject = `Candidate Assessment Report - ${formTitle} - ${candidateInfo.name}`;
-    
-    // Extract questions from the assessment table in order
+
+    // Get form questions in original order
+    const form = FormApp.openByUrl(spreadsheet.getFormUrl());
+    const formItems = form.getItems();
+    const formQuestions = formItems
+      .filter(item => item.getType() !== FormApp.ItemType.SECTION_HEADER)
+      .map(item => item.getTitle())
+      .filter(title => !["Name", "Mobile", "Email"].includes(title));
+
+    // Extract assessment table content
     const tableContent = content.match(/PERFORMANCE ASSESSMENT TABLE[\s\S]*?(?=\n\nDETAILED RESPONSES|$)/);
-    const orderedQuestions = [];
+    let tableRows = [];
     
     if (tableContent) {
-      const tableRows = tableContent[0].split('\n')
+      tableRows = tableContent[0].split('\n')
         .filter(row => row.includes('|'))
         .slice(2); // Skip header and divider rows
-      
-      // Extract scenarios from the table
-      tableRows.forEach(row => {
-        const cells = row.split('|');
-        if (cells.length >= 3) {
-          const category = cells[1].trim();
-          const scenario = cells[2].trim();
-          orderedQuestions.push({ category, scenario });
+    }
+
+    // Create a map of scenarios and their categories from the table
+    const scenarioMap = new Map();
+    tableRows.forEach(row => {
+      const cells = row.split('|');
+      if (cells.length >= 3) {
+        const category = cells[1].trim();
+        const scenario = cells[2].trim();
+        scenarioMap.set(scenario, category);
+      }
+    });
+
+    // Match form questions with table scenarios
+    const matchedResponses = formQuestions.map(question => {
+      // Find the most relevant scenario for this question
+      let bestMatch = null;
+      let bestMatchScore = 0;
+
+      scenarioMap.forEach((category, scenario) => {
+        const questionWords = question.toLowerCase().split(' ');
+        const scenarioWords = scenario.toLowerCase().split(' ');
+        
+        // Count matching significant words
+        const matchScore = questionWords.reduce((score, word) => {
+          if (word.length > 3 && scenarioWords.includes(word)) {
+            score += 1;
+          }
+          return score;
+        }, 0);
+
+        if (matchScore > bestMatchScore) {
+          bestMatchScore = matchScore;
+          bestMatch = { scenario, category };
         }
       });
-    }
-    
-    // Function to find the matching question from responses
-    function findMatchingQuestion(scenario, responses) {
-      const keywords = scenario.toLowerCase().split(' ');
-      return Object.entries(responses).find(([question]) => 
-        keywords.some(keyword => 
-          question.toLowerCase().includes(keyword)
-        )
-      );
-    }
-    
-    // Format responses in the same order as the table
-    const formattedResponses = orderedQuestions
-      .map(({ category, scenario }) => {
-        const matchingResponse = findMatchingQuestion(scenario, responses);
-        return matchingResponse 
-          ? `Question: ${matchingResponse[0]}\nAnswer: ${matchingResponse[1]}`
-          : `Question: ${category} - ${scenario}\nAnswer: No answer generated`;
-      })
+
+      return {
+        question,
+        category: bestMatch?.category || 'Uncategorized',
+        scenario: bestMatch?.scenario || question.slice(0, 30),
+        answer: responses[question] || 'No answer provided'
+      };
+    });
+
+    // Format the detailed responses section using the original question order
+    const formattedResponses = matchedResponses
+      .map(({ question, answer }) => 
+        `Question: ${question}\nAnswer: ${answer}`
+      )
       .join('\n\n');
     
     var body = `
