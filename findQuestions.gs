@@ -28,13 +28,11 @@ function validateInterviewQuestions(questions, aspects) {
     // Prepare aspects string
     const aspectsList = aspects.split(',').map(a => a.trim()).join(', ');
 
-    // Prepare prompt for Gemini
+    // Prepare prompt for Gemini with explicit instructions about response format
     const prompt = `As a recruitment expert, evaluate if ALL these interview questions are suitable for assessing: ${aspectsList}.
 
-Respond only with this exact JSON:
-{
-  "isValid": true/false
-}
+You must respond with ONLY a JSON object in this EXACT format (no markdown, no code blocks):
+{"isValid": true/false}
 
 Where true means ALL questions are suitable for assessing the given aspects, and false means at least one question is not suitable.
 
@@ -44,15 +42,21 @@ ${interviewQuestions.map((q, i) => `${i + 1}. ${q}`).join('\n')}`;
     // Call Gemini API
     const response = callGeminiAPI(prompt, apiKey);
     
-    // Parse JSON response
-    const result = JSON.parse(response);
-    
-    return {
-      isValid: result.isValid,
-      message: result.isValid ? 
-        'Questions validated successfully' : 
-        'Questions do not match the specified aspects'
-    };
+    try {
+      // Parse the cleaned response
+      Logger.log('Attempting to parse response:', response);
+      const result = JSON.parse(`{${response}}`);
+      
+      return {
+        isValid: result.isValid,
+        message: result.isValid ? 
+          'Questions validated successfully' : 
+          'Questions do not adequately assess the specified aspects'
+      };
+    } catch (parseError) {
+      Logger.log('JSON parsing error:', parseError);
+      throw new Error('Invalid response format from validation service');
+    }
 
   } catch (error) {
     Logger.log(`Error in validateInterviewQuestions: ${error.message}`);

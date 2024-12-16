@@ -9,49 +9,91 @@ function suggestAnswers(questions) {
     // Format prompt to request JSON response with realistic info
     const prompt = `Act as an expert sales professional and generate interview responses.
 
-Return your response in this EXACT JSON format, and ONLY this format:
+For a more natural response, provide your response in this exact format (do not include any code blocks or backticks):
 {
   "responses": [
-    "Generate a realistic name",
-    "Generate a realistic Hong Kong mobile number (+852 format)",
-    "Generate a realistic email address matching the name",
-    "detailed answer for fourth question",
-    "detailed answer for fifth question",
+    "Your name (realistic)",
+    "Your Hong Kong mobile number (+852 format)",
+    "Your email address (matching the name)",
+    "detailed answer to fourth question",
+    "detailed answer to fifth question",
     "etc..."
   ]
 }
 
-For each answer after the first three:
-- Show strong negotiation skills and empathy
-- Provide specific examples with metrics
+Guidelines for answers after the first three:
+- Demonstrate strong negotiation skills and empathy
+- Include specific examples with metrics
 - Keep responses professional and concise (150-200 words)
-- Focus on demonstrating skills and experience
-- Do not include any question text in the answers
-- Make sure answers align with the questions asked
-- Exclude any markdown formatting or extra text
+- Focus on showing skills and experience
+- Do not include the question text
+- Align answers with the questions asked
 
 Here are the questions:
 ${questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}`;
 
     // Call Gemini API
     const response = callGeminiAPI(prompt, apiKey);
+    Logger.log('Raw API response:', response);
     
-    // Parse JSON response
-    const allAnswers = parseJsonResponse(response, questions.length);
+    // Handle response parsing
+    let parsedResponse;
+    try {
+      // Clean up the response text
+      let cleanedResponse = response;
+      
+      // If response is wrapped in code blocks, extract it
+      const codeBlockMatch = response.match(/```(?:json)?\s*([\s\S]+?)\s*```/);
+      if (codeBlockMatch) {
+        cleanedResponse = codeBlockMatch[1];
+      }
+
+      // Ensure the response has proper JSON structure
+      if (!cleanedResponse.trim().startsWith('{')) {
+        cleanedResponse = '{' + cleanedResponse;
+      }
+      if (!cleanedResponse.trim().endsWith('}')) {
+        cleanedResponse = cleanedResponse + '}';
+      }
+
+      Logger.log('Cleaned response:', cleanedResponse);
+      parsedResponse = JSON.parse(cleanedResponse);
+      
+    } catch (parseError) {
+      Logger.log('Parse error:', parseError);
+      throw new Error(`Failed to parse API response: ${parseError.message}`);
+    }
+
+    // Extract answers from parsed response
+    const answers = parsedResponse.responses || [];
+    Logger.log('Parsed answers:', answers);
+
+    // Ensure we have enough answers
+    const resultAnswers = new Array(questions.length).fill('No answer generated');
+    answers.forEach((answer, index) => {
+      if (index < questions.length) {
+        resultAnswers[index] = answer;
+      }
+    });
 
     return {
       questions: questions,
-      answers: allAnswers
+      answers: resultAnswers
     };
 
   } catch (error) {
     Logger.log(`Error in suggestAnswers: ${error.message}`);
-    throw error;
+    // Return more informative error messages instead of generic ones
+    return {
+      questions: questions,
+      answers: new Array(questions.length).fill(`Error: ${error.message}`)
+    };
   }
 }
 
 function callGeminiAPI(prompt, apiKey) {
-  const apiEndpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${apiKey}`;
+  // Updated endpoint for Gemini 1.5 Pro
+  const apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
   
   const requestBody = {
     contents: [{
@@ -63,7 +105,8 @@ function callGeminiAPI(prompt, apiKey) {
       temperature: 0.7,
       topK: 40,
       topP: 0.95,
-      maxOutputTokens: 2048
+      maxOutputTokens: 2048,
+      candidateCount: 1
     },
     safetySettings: [
       {
@@ -104,7 +147,24 @@ function callGeminiAPI(prompt, apiKey) {
       throw new Error('No response generated from Gemini');
     }
     
-    return responseData.candidates[0].content.parts[0].text;
+    // Extract text from response
+    const rawText = responseData.candidates[0].content.parts[0].text;
+    
+    // Clean the response text to handle code blocks
+    let cleanedText = rawText;
+    
+    // Remove code block markers if present
+    const codeBlockMatch = rawText.match(/```(?:json)?\s*([\s\S]+?)\s*```/);
+    if (codeBlockMatch) {
+      cleanedText = codeBlockMatch[1];
+    }
+    
+    // Remove any leading/trailing whitespace and standalone curly braces
+    cleanedText = cleanedText.trim().replace(/^{/, '').replace(/}$/, '');
+    
+    Logger.log('Cleaned response text:', cleanedText);
+    return cleanedText;
+    
   } catch (error) {
     Logger.log(`Error calling Gemini API: ${error.message}`);
     throw error;
